@@ -27,9 +27,9 @@ By completing this assignment, you will:
 # Clone and navigate to project
 cd AgentsAssignment
 
-# Create virtual environment (e.g. menv or venv)
-python -m venv menv
-# Activate: Windows: menv\Scripts\activate  |  Linux/Mac: source menv/bin/activate
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -47,53 +47,38 @@ DIAL_API_KEY=your_dial_api_key_here
 
 ### 3. Run the Example
 ```bash
-# Run the main application (either entry point works)
-python -m src.main
-# or
+# Run the basic example
 python -m src.agents
 
 # Run with debugging
-python -m src.main --debug
-
-# Example with parameters
-python -m src.main --customer "John Smith" --room-type "Suite" --nights 3
+python -m src.agents --debug
 ```
 
 ## 📁 Project Structure
 
-Implementation follows this structure:
+Your final submission should follow this structure:
 ```
-AgentsAssignment/
-├── README.md                 # Implementation documentation
+hotel-management-system/
+├── README.md                 # Your implementation documentation
 ├── requirements.txt          # Dependencies
-├── .env.example              # Environment template (DIAL_API_KEY, optional DIAL_TEMPERATURE)
+├── .env.example             # Environment template
 ├── src/
 │   ├── __init__.py
-│   ├── main.py               # Main application (orchestration, CLI, workflow graph)
+│   ├── agents.py            # Main application
 │   ├── models/
 │   │   ├── __init__.py
-│   │   └── state.py         # State schema (TypedDict), create_initial_state, state_to_dict
+│   │   └── state.py         # State management
 │   ├── agents/
 │   │   ├── __init__.py
-│   │   ├── __main__.py       # Entry point for python -m src.agents
-│   │   ├── booking.py       # Booking agent (reservations, mock availability, payment simulation)
-│   │   ├── housekeeping.py  # Housekeeping agent (room prep, checklist, mock schedule)
-│   │   └── customer_service.py  # Customer service agent (DIAL integration, responses, sentiment)
+│   │   ├── booking.py       # Booking agent
+│   │   ├── housekeeping.py  # Housekeeping agent
+│   │   └── customer_service.py  # Customer service agent
 │   └── utils/
 │       ├── __init__.py
 │       ├── dial_client.py   # EPAM DIAL API client
-│       └── mocks.py          # Mock data and APIs (rooms, housekeeping, payment, etc.)
+│       └── mocks.py         # Mock data and APIs
+
 ```
-
-## 📋 Implementation Details
-
-- **State:** LangGraph state is a TypedDict (`HotelState`) with `request`, `booking`, `housekeeping`, `customer_service`, `errors`, `workflow_step`. Nodes receive and return partial state dicts.
-- **Workflow:** `START -> booking -> (housekeeping | customer_service) -> customer_service -> END`. Conditional routing: if booking status is Confirmed, go to housekeeping then customer_service; otherwise go directly to customer_service.
-- **Booking agent:** Validates request, uses mock room availability and rates from `mocks.py`, simulates payment via `mock_payment_confirm`, returns booking and errors.
-- **Housekeeping agent:** Runs only after confirmed booking; prepares room using mock schedule, checklist, staff; optional maintenance from mocks.
-- **Customer service agent:** Uses DIAL `generate_response` for guest queries; optional `analyze_sentiment` when `feedback`/`complaint` in request; fallback message when DIAL is not configured.
-- **Logging:** Standard logging (INFO) for workflow steps and agent actions; `--debug` increases verbosity.
-- **DIAL:** Integrated in customer_service for AI-generated responses; test with `python -m src.utils.dial_client`.
 
 ## 🏗️ System Architecture
 
@@ -125,6 +110,12 @@ AgentsAssignment/
    - Add logging for debugging and monitoring
 
 
+## 📋 How You Will Be Evaluated
+
+- **Total marks:** 100 (+ up to 10 bonus). **Passing marks:** 70/100.
+- Evaluation focuses on whether your **multi-agent system shows understanding of orchestration**: booking, housekeeping, and customer service agents; LangGraph workflow; conditional routing and basic error handling.
+- **Leniency:** Partial implementations are acceptable if they demonstrate the concepts. Basic error handling is enough if core routing works. Minor implementation issues are not heavily penalized when core agent logic is correct.
+
 ## 📝 Submission Requirements
 
 ### Required Files
@@ -145,13 +136,11 @@ AgentsAssignment/
 
 ```bash
 # Run the main application
-python -m src.main
-# or
 python -m src.agents
 
 # Test DIAL API connection
 python -m src.utils.dial_client
 
 # Run with different parameters
-python -m src.main --customer "John Smith" --room-type "Suite" --nights 3
+python -m src.agents --customer "John Smith" --room-type "Suite" --nights 3
 ```
