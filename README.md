@@ -96,6 +96,13 @@ RAGAssignments/
     └── utils/dial_client.py    # DIAL API client (provided)
 ```
 
+## 📋 How You Will Be Evaluated
+
+- **Total marks:** 100. **Passing marks:** 70/100.
+- Evaluation is **concept-focused**: demonstrating Loading, Chunking, Embedding, Retrieval, and Context Injection matters more than perfect code style.
+- **Files reviewed:** `extract_content.py`, `basic_rag.py`, `embedding_comparison.py`, `vector_store_comparison.py`, and the conversational layer: `app.py`, `conversational_rag.py`, `chat_history.py`, `message_trimming.py` (in `basic-rag/` and `conversational-rag/` as per structure).
+- **Flexibility:** You can use **WebBaseLoader or an equivalent** content extraction method. **Alternative vector stores** (not only FAISS/ChromaDB) are acceptable if they show understanding. **Any reasonable embedding models** can be used for comparison. If only one vector store is implemented but you attempt a comparison, evaluators are lenient. Focus on a working RAG pipeline and conceptual understanding.
+
 ## 🔗 Key Resources
 
 - [LangChain Documentation](https://python.langchain.com/)

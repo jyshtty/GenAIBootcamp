@@ -1,2 +1,0 @@
-# Chat session: some-id
-

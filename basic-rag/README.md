@@ -26,23 +26,20 @@ By completing this assignment, you will:
 # Clone and navigate to project
 cd basic-rag
 
-# Create virtual environment (use myenv or venv)
-python -m venv myenv
-# On Windows: myenv\Scripts\activate
-# On Unix: source myenv/bin/activate
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 ```
-**Note (Windows):** If `pip install` fails with "No such file or directory" for long paths, enable [Windows Long Path support](https://pip.pypa.io/warnings/enable-long-paths) or clone/run the project from a shorter path (e.g. `C:\dev\basic-rag`).
 
 ### 2. Configuration
-Create a `.env` file in the project root (copy from `.env.example` if present) with:
+Create `.env` file in the project root:
 ```env
 DIAL_API_KEY=your_dial_api_key_here
 TARGET_URL=https://example-website.com
 ```
-Do not commit `.env` to version control.
 
 **Getting your DIAL API Key:**
 1. Obtain your API key from the EPAM Support
