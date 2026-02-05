@@ -1,6 +1,6 @@
 # 🎯 RAG Assignments - Retrieval Augmented Generation Learning Path
 
-**Target Audience:** Intermediate Level Developers  
+
 **Focus:** Understanding and Building RAG Systems
 
 ## 📖 Overview
