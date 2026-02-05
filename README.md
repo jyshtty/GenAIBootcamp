@@ -1,7 +1,6 @@
 # 🏨 Multi-Agent Hotel Management System
 
-**Assignment Duration:** 1 Week  
-**Target Audience:** Intermediate Level Developers  
+
 **Focus:** Technical Implementation with LangGraph
 
 ## 🎯 Learning Objectives
