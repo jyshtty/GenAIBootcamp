@@ -25,14 +25,21 @@ DEFAULT_EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 
 
 class BasicRAG:
-    def __init__(self, vector_store_type: str = "faiss", embedding_model: str = DEFAULT_EMBEDDING_MODEL):
+    def __init__(
+        self,
+        vector_store_type: str = "faiss",
+        embedding_model: str = DEFAULT_EMBEDDING_MODEL,
+        content_dir: str = "data/extracted_content",
+    ):
         """
         Initialize RAG system.
 
         Args:
             vector_store_type (str): "faiss" or "chromadb"
             embedding_model (str): HuggingFace sentence-transformer model name
+            content_dir (str): Default directory holding chunks.json
         """
+        self.content_dir = content_dir
         self.dial_client = DIALClient()
         self.vector_store_type = vector_store_type
         self.embeddings = HuggingFaceEmbeddings(
@@ -42,30 +49,32 @@ class BasicRAG:
         self.vector_store = None
         print(f"BasicRAG initialized | store={vector_store_type} | embeddings={embedding_model}")
 
-    def load_documents(self, content_dir: str = "data/extracted_content"):
+    def load_documents(self, content_dir: str = None):
         """
-        Load chunk JSON files saved by extract_content.py.
+        Load documents from a single chunks.json file (JSON array of {content, metadata}).
 
         Args:
-            content_dir (str): Directory containing chunk_{n}.json files
+            content_dir (str): Directory containing chunks.json (defaults to self.content_dir)
 
         Returns:
             list: LangChain Document objects
-        """
-        documents = []
-        if not os.path.exists(content_dir):
-            print(f"Content directory '{content_dir}' not found. Run extract_content.py first.")
-            return documents
 
-        for filename in sorted(os.listdir(content_dir)):
-            if filename.endswith(".json"):
-                with open(os.path.join(content_dir, filename), encoding="utf-8") as f:
-                    data = json.load(f)
-                    documents.append(Document(
-                        page_content=data["content"],
-                        metadata=data.get("metadata", {}),
-                    ))
-        print(f"Loaded {len(documents)} documents from '{content_dir}'")
+        Raises:
+            FileNotFoundError: if chunks.json is missing.
+        """
+        content_dir = content_dir or getattr(self, "content_dir", "data/extracted_content")
+        chunks_path = os.path.join(content_dir, "chunks.json")
+        if not os.path.exists(chunks_path):
+            raise FileNotFoundError(f"chunks.json not found in '{content_dir}'. Run extract_content.py first.")
+
+        with open(chunks_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        documents = [
+            Document(page_content=item["content"], metadata=item.get("metadata", {}))
+            for item in data
+        ]
+        print(f"Loaded {len(documents)} documents from '{chunks_path}'")
         return documents
 
     def create_vector_store(self, documents: list):

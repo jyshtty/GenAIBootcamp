@@ -30,6 +30,38 @@ def _msg_tokens(msg: Dict) -> int:
     return _count_tokens(msg.get("content", "")) + 4  # 4 tokens overhead per message
 
 
+def get_encoding():
+    """Return the tiktoken encoder (cl100k_base) or a char-based fallback."""
+    try:
+        import tiktoken
+        return tiktoken.get_encoding("cl100k_base")
+    except ImportError:
+        class _FallbackEncoder:
+            def encode(self, text: str):
+                return list(text)
+        return _FallbackEncoder()
+
+
+def count_tokens(messages: List[Dict]) -> int:
+    """Total token count across a list of {"role", "content"} messages."""
+    return sum(_msg_tokens(m) for m in messages)
+
+
+def trim_messages(messages: List[Dict], max_history_length: int = 10):
+    """
+    Keep the last `max_history_length` user/assistant pairs (system messages preserved).
+
+    Returns:
+        (trimmed_messages, total_tokens)
+    """
+    system = [m for m in messages if m.get("role") == "system"]
+    non_system = [m for m in messages if m.get("role") != "system"]
+    keep = max_history_length * 2  # pairs -> individual messages
+    kept = non_system[-keep:] if len(non_system) > keep else non_system
+    trimmed = system + kept
+    return trimmed, count_tokens(trimmed)
+
+
 class MessageTrimmer:
     """Trim a list of chat messages to fit within token or count constraints."""
 

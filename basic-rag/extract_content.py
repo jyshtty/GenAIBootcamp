@@ -9,6 +9,7 @@ Example usage:
 """
 
 import os
+import re
 import json
 import argparse
 from dotenv import load_dotenv
@@ -47,9 +48,16 @@ def extract_content_from_url(url: str, chunk_size: int = 1000, chunk_overlap: in
     return chunks
 
 
+def clean_text(text: str) -> str:
+    """Normalize whitespace and strip; return "" for empty/None input."""
+    if not text:
+        return ""
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200):
     """
-    Split raw text into overlapping Document chunks.
+    Split raw text into overlapping string chunks.
 
     Args:
         text (str): Text to chunk
@@ -57,34 +65,35 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200):
         overlap (int): Overlap between chunks
 
     Returns:
-        list: LangChain Document objects
+        list[str]: Chunked text strings; empty list if input is blank.
     """
+    if not text or not text.strip():
+        return []
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=overlap,
         separators=["\n\n", "\n", ". ", " ", ""],
     )
-    return splitter.create_documents([text])
+    return splitter.split_text(text)
 
 
 def save_chunks(chunks: list, output_dir: str = "data/extracted_content"):
     """
-    Save document chunks as numbered JSON files.
+    Save document chunks as a single chunks.json file (JSON array of {content, metadata}).
 
     Args:
         chunks (list): LangChain Document objects
-        output_dir (str): Directory to save chunk files
+        output_dir (str): Directory to write chunks.json into
     """
     os.makedirs(output_dir, exist_ok=True)
-    for i, chunk in enumerate(chunks):
-        chunk_data = {
-            "content": chunk.page_content,
-            "metadata": chunk.metadata,
-        }
-        path = os.path.join(output_dir, f"chunk_{i:04d}.json")
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(chunk_data, f, indent=2, ensure_ascii=False)
-    print(f"Saved {len(chunks)} chunks to '{output_dir}'")
+    payload = [
+        {"content": c.page_content, "metadata": c.metadata}
+        for c in chunks
+    ]
+    path = os.path.join(output_dir, "chunks.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+    print(f"Saved {len(chunks)} chunks to '{path}'")
 
 
 if __name__ == "__main__":
