@@ -1,66 +1,103 @@
 """
-TODO: Implement web content extraction using LangChain WebBaseLoader
+Web content extraction using LangChain WebBaseLoader.
 
-Requirements:
-1. Use WebBaseLoader to extract content from web pages
-2. Clean and preprocess the extracted text
-3. Implement text chunking with overlap
-4. Save processed chunks with metadata
-5. Handle edge cases (empty content, large documents)
+Loads a page, splits it into overlapping chunks, and optionally saves
+them as JSON files for later use by the RAG pipeline.
 
 Example usage:
-    python extract_content.py --url https://example.com
+    python extract_content.py --url https://en.wikipedia.org/wiki/Machine_learning
 """
 
 import os
+import json
 import argparse
 from dotenv import load_dotenv
+from langchain_community.document_loaders import WebBaseLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 load_dotenv()
 
-def extract_content_from_url(url: str):
+
+def extract_content_from_url(url: str, chunk_size: int = 1000, chunk_overlap: int = 200):
     """
-    TODO: Implement content extraction from URL
-    
+    Load a web page and split it into overlapping chunks.
+
     Args:
         url (str): Website URL to extract content from
-        
+        chunk_size (int): Maximum characters per chunk
+        chunk_overlap (int): Overlap between consecutive chunks
+
     Returns:
-        list: List of processed text chunks with metadata
+        list: LangChain Document objects with page_content and metadata
     """
-    pass
+    print(f"Loading content from {url}...")
+    loader = WebBaseLoader(url)
+    docs = loader.load()
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        separators=["\n\n", "\n", ". ", " ", ""],
+    )
+    chunks = splitter.split_documents(docs)
+
+    # Remove empty/whitespace-only chunks
+    chunks = [c for c in chunks if c.page_content.strip()]
+    print(f"Created {len(chunks)} chunks from {url}")
+    return chunks
+
 
 def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200):
     """
-    TODO: Implement text chunking with overlap
-    
+    Split raw text into overlapping Document chunks.
+
     Args:
         text (str): Text to chunk
         chunk_size (int): Size of each chunk
         overlap (int): Overlap between chunks
-        
+
     Returns:
-        list: List of text chunks
+        list: LangChain Document objects
     """
-    pass
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=overlap,
+        separators=["\n\n", "\n", ". ", " ", ""],
+    )
+    return splitter.create_documents([text])
+
 
 def save_chunks(chunks: list, output_dir: str = "data/extracted_content"):
     """
-    TODO: Save processed chunks to files
-    
+    Save document chunks as numbered JSON files.
+
     Args:
-        chunks (list): List of text chunks
-        output_dir (str): Directory to save chunks
+        chunks (list): LangChain Document objects
+        output_dir (str): Directory to save chunk files
     """
-    pass
+    os.makedirs(output_dir, exist_ok=True)
+    for i, chunk in enumerate(chunks):
+        chunk_data = {
+            "content": chunk.page_content,
+            "metadata": chunk.metadata,
+        }
+        path = os.path.join(output_dir, f"chunk_{i:04d}.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(chunk_data, f, indent=2, ensure_ascii=False)
+    print(f"Saved {len(chunks)} chunks to '{output_dir}'")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Extract content from web pages")
-    parser.add_argument("--url", required=True, help="URL to extract content from")
+    parser.add_argument("--url", default=os.getenv("TARGET_URL"), help="URL to extract content from")
     parser.add_argument("--output", default="data/extracted_content", help="Output directory")
-    
-    args = parser.parse_args()
-    
-    # TODO: Implement main execution logic
-    print(f"TODO: Extract content from {args.url}")
+    parser.add_argument("--chunk-size", type=int, default=1000)
+    parser.add_argument("--chunk-overlap", type=int, default=200)
 
+    args = parser.parse_args()
+    if not args.url:
+        parser.error("Provide --url or set TARGET_URL in .env")
+
+    chunks = extract_content_from_url(args.url, args.chunk_size, args.chunk_overlap)
+    save_chunks(chunks, args.output)
+    print(f"Done. {len(chunks)} chunks saved to '{args.output}'")

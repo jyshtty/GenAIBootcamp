@@ -21,18 +21,18 @@ class DIALClient:
         ])
     """
     
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-5-mini-2025-08-07"):
         """
         Initialize DIAL client.
-        
+
         Args:
             api_key: DIAL API key (will use DIAL_API_KEY env var if not provided)
-            model: Model name to use (default: gpt-4)
+            model: Model name to use (default: gpt-5-mini-2025-08-07)
         """
         self.api_key = api_key or os.getenv("DIAL_API_KEY", "<YOUR_API_KEY_HERE>")
         self.model = model
         self.azure_endpoint = "https://ai-proxy.lab.epam.com"
-        self.api_version = "2024-02-01"
+        self.api_version = "2025-04-01-preview"
         
         # Initialize Azure OpenAI client
         try:
@@ -70,7 +70,6 @@ class DIALClient:
             response = self.client.chat.completions.create(
                 model=model or self.model,
                 messages=messages,
-                temperature=float(os.getenv("DIAL_TEMPERATURE", "0.7"))
             )
             return response.choices[0].message.content
             
