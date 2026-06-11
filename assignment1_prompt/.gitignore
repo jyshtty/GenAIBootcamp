@@ -1,0 +1,28 @@
+# Environment and secrets
+.env
+.env.local
+*.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+tests/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+
+# Output / data (optional; remove if you want to track)
+token_counts.csv
+
+# OS
+.DS_Store
+Thumbs.db
