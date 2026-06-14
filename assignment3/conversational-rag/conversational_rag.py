@@ -12,7 +12,7 @@ Example usage:
 import os
 import sys
 import argparse
-from typing import List, Optional
+from typing import List
 
 from dotenv import load_dotenv
 from langchain_openai import AzureChatOpenAI
@@ -85,7 +85,7 @@ class ConversationalRAG:
         )
 
         self.vector_store = None
-        self.qa_chain: Optional[ConversationalRetrievalChain] = None
+        self._chains: dict[str, ConversationalRetrievalChain] = {}
 
         # History management
         self.history_manager = ChatHistoryManager(max_history=max_history * 2)
@@ -110,12 +110,10 @@ class ConversationalRAG:
         """
         documents = _load_and_chunk(url)
         self._build_vector_store(documents)
-        self._build_chain()
 
     def setup_from_documents(self, documents: List[Document]):
         """Alternative setup using pre-loaded Document objects."""
         self._build_vector_store(documents)
-        self._build_chain()
 
     def _build_vector_store(self, documents: List[Document]):
         if not documents:
@@ -130,7 +128,7 @@ class ConversationalRAG:
             )
         print(f"Vector store ({self.vector_store_type}) created with {len(documents)} docs.")
 
-    def _build_chain(self):
+    def _build_chain(self, session_id: str) -> ConversationalRetrievalChain:
         if not self.vector_store:
             raise RuntimeError("Call setup() before _build_chain().")
 
@@ -140,14 +138,15 @@ class ConversationalRAG:
             return_messages=True,
             output_key="answer",
         )
-        self.qa_chain = ConversationalRetrievalChain.from_llm(
+        chain = ConversationalRetrievalChain.from_llm(
             llm=self.llm,
             retriever=self.vector_store.as_retriever(search_kwargs={"k": 3}),
             memory=memory,
             return_source_documents=True,
             verbose=False,
         )
-        print("Conversation chain ready.")
+        print(f"Conversation chain ready for session '{session_id}'.")
+        return chain
 
     # ------------------------------------------------------------------
     # Chat
@@ -164,13 +163,16 @@ class ConversationalRAG:
         Returns:
             dict: {"answer": str, "sources": list[str]}
         """
-        if not self.qa_chain:
+        if not self.vector_store:
             return {"answer": "RAG not initialised. Call setup() first.", "sources": []}
 
-        # Record user turn
-        self.history_manager.add_message(session_id, "user", question)
+        if session_id not in self._chains:
+            self._chains[session_id] = self._build_chain(session_id)
 
-        result = self.qa_chain({"question": question})
+        # Record user turn
+        self.history_manager. (session_id, "user", question)
+
+        result = self._chains[session_id]({"question": question})
         answer = result.get("answer", "")
         source_docs = result.get("source_documents", [])
         sources = list({doc.metadata.get("source", "") for doc in source_docs if doc.metadata.get("source")})
@@ -181,10 +183,9 @@ class ConversationalRAG:
         return {"answer": answer, "sources": sources}
 
     def reset_session(self, session_id: str = "default"):
-        """Clear memory for a session and rebuild the LangChain memory window."""
+        """Clear memory for a session and drop its chain so a fresh one is created on next chat."""
         self.history_manager.clear_session(session_id)
-        if self.vector_store:
-            self._build_chain()  # fresh memory window
+        self._chains.pop(session_id, None)
         print(f"Session '{session_id}' reset.")
 
     def save_session(self, session_id: str):
@@ -227,7 +228,7 @@ if __name__ == "__main__":
     rag.setup(args.url)
 
     print(f"\nConversational RAG ready. Session: {args.session_id}")
-    print("Type 'quit' to exit, 'reset' to clear history, 'save' to persist session.\n")
+    print("Type 'quit' to exit, 'reset' to clear history, 'save' to persist, 'load' to restore.\n")
 
     while True:
         try:
@@ -246,6 +247,10 @@ if __name__ == "__main__":
             continue
         if user_input.lower() == "save":
             rag.save_session(args.session_id)
+            continue
+        if user_input.lower() == "load":
+            loaded = rag.load_session(args.session_id)
+            print("Session restored.\n" if loaded else "No saved session found.\n")
             continue
 
         response = rag.chat(user_input, session_id=args.session_id)
